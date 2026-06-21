@@ -1,0 +1,53 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: credit-strategy-api
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+  tracing:
+    enabled: true
+    sampling:
+      probability: 1.0
+
+app:
+  aws:
+    region: ${AWS_REGION:us-east-1}
+    endpoint-override: ${AWS_ENDPOINT:http://localhost:4566}
+    access-key: ${AWS_ACCESS_KEY_ID:test}
+    secret-key: ${AWS_SECRET_ACCESS_KEY:test}
+  api:
+    strategy-table-name: ${STRATEGY_TABLE_NAME:CreditRecoveryStrategy}
+  security:
+    jwt-enabled: ${JWT_ENABLED:false}
+
+resilience4j:
+  retry:
+    instances:
+      dynamodb:
+        max-attempts: 2
+        wait-duration: 100ms
+        enable-exponential-backoff: true
+  circuitbreaker:
+    instances:
+      dynamodb:
+        sliding-window-size: 20
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+
+logging:
+  level:
+    br.com.creditrecovery: INFO

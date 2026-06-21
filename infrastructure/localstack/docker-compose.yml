@@ -1,0 +1,130 @@
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.3
+    container_name: credit-recovery-elasticsearch
+    ports:
+      - "9200:9200"
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:9200/_cluster/health >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.15.3
+    container_name: credit-recovery-logstash
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    ports:
+      - "5000:5000"
+      - "9600:9600"
+    environment:
+      LS_JAVA_OPTS: "-Xms256m -Xmx256m"
+      xpack.monitoring.enabled: "false"
+    volumes:
+      - "../observability/logstash/pipeline:/usr/share/logstash/pipeline:ro"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:9600/_node/pipelines >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+
+  localstack:
+    image: localstack/localstack:3.8
+    container_name: credit-recovery-localstack
+    ports:
+      - "4566:4566"
+    environment:
+      SERVICES: dynamodb,sqs
+      DEFAULT_REGION: us-east-1
+      AWS_DEFAULT_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      DEBUG: "0"
+    volumes:
+      - ".localstack:/var/lib/localstack"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:4566/_localstack/health >/dev/null"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  localstack-init:
+    image: localstack/localstack:3.8
+    container_name: credit-recovery-localstack-init
+    depends_on:
+      localstack:
+        condition: service_healthy
+    environment:
+      AWS_REGION: us-east-1
+      AWS_DEFAULT_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      AWS_ENDPOINT: http://localstack:4566
+      STRATEGY_TABLE_NAME: CreditRecoveryStrategy
+      MAIN_QUEUE_NAME: credit-profile-received
+      DLQ_NAME: credit-profile-received-dlq
+    volumes:
+      - "./init-compose.sh:/init-compose.sh:ro"
+    entrypoint: ["/bin/bash", "/init-compose.sh"]
+
+  credit-strategy-api:
+    build:
+      context: ../..
+      dockerfile: credit-strategy-api/Dockerfile
+    container_name: credit-strategy-api
+    depends_on:
+      localstack-init:
+        condition: service_completed_successfully
+      logstash:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      AWS_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      AWS_ENDPOINT: http://localstack:4566
+      STRATEGY_TABLE_NAME: CreditRecoveryStrategy
+      JWT_ENABLED: "false"
+      SPRING_PROFILES_ACTIVE: docker
+      LOGSTASH_HOST: logstash
+      LOGSTASH_PORT: "5000"
+
+  credit-strategy-processor:
+    build:
+      context: ../..
+      dockerfile: credit-strategy-processor/Dockerfile
+    container_name: credit-strategy-processor
+    depends_on:
+      localstack-init:
+        condition: service_completed_successfully
+      logstash:
+        condition: service_healthy
+    ports:
+      - "8082:8081"
+    environment:
+      AWS_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      AWS_ENDPOINT: http://localstack:4566
+      STRATEGY_TABLE_NAME: CreditRecoveryStrategy
+      CREDIT_PROFILE_QUEUE_URL: http://localstack:4566/000000000000/credit-profile-received
+      PROCESSOR_POLLING_ENABLED: "true"
+      PROCESSOR_MAX_MESSAGES: "5"
+      PROCESSOR_WAIT_TIME_SECONDS: "2"
+      PROCESSOR_POLL_DELAY_MS: "1000"
+      SPRING_PROFILES_ACTIVE: docker
+      LOGSTASH_HOST: logstash
+      LOGSTASH_PORT: "5000"
+
+volumes:
+  elasticsearch-data:

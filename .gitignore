@@ -1,0 +1,11 @@
+target/
+.idea/
+.vscode/
+*.iml
+.mvn/wrapper/maven-wrapper.jar
+*.log
+.DS_Store
+infrastructure/localstack/.localstack/
+.terraform/
+*.tfstate
+*.tfstate.backup

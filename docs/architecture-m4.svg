@@ -1,0 +1,198 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1800" height="1180" viewBox="0 0 1800 1180" role="img" aria-labelledby="title desc">
+  <title id="title">Arquitetura M4 - Credit Recovery Platform</title>
+  <desc id="desc">Diagrama tecnico da arquitetura cloud-native do projeto com endpoints, eventos, mensageria, processamento, banco de dados, observabilidade e servicos AWS.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="10" markerHeight="10" orient="auto-start-reverse">
+      <path d="M 1 1 L 11 6 L 1 11 z" fill="#1f4e79"/>
+    </marker>
+    <marker id="arrowGreen" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="10" markerHeight="10" orient="auto-start-reverse">
+      <path d="M 1 1 L 11 6 L 1 11 z" fill="#2f7d32"/>
+    </marker>
+    <marker id="arrowRed" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="10" markerHeight="10" orient="auto-start-reverse">
+      <path d="M 1 1 L 11 6 L 1 11 z" fill="#b42318"/>
+    </marker>
+    <style>
+      .bg { fill: #f7fafc; }
+      .title { font: 700 34px Arial, sans-serif; fill: #0f172a; }
+      .subtitle { font: 400 18px Arial, sans-serif; fill: #475569; }
+      .lane-title { font: 700 20px Arial, sans-serif; fill: #0f172a; }
+      .box-title { font: 700 18px Arial, sans-serif; fill: #0f172a; }
+      .box-text { font: 400 14px Arial, sans-serif; fill: #334155; }
+      .small { font: 400 12px Arial, sans-serif; fill: #475569; }
+      .tag { font: 700 12px Arial, sans-serif; fill: #ffffff; }
+      .lane { fill: #ffffff; stroke: #cbd5e1; stroke-width: 2; rx: 16; }
+      .aws { fill: #eef6ff; stroke: #2b6cb0; stroke-width: 2; rx: 14; }
+      .app { fill: #eefaf0; stroke: #2f7d32; stroke-width: 2; rx: 14; }
+      .data { fill: #fff7ed; stroke: #c2410c; stroke-width: 2; rx: 14; }
+      .obs { fill: #f5f3ff; stroke: #6d28d9; stroke-width: 2; rx: 14; }
+      .external { fill: #f8fafc; stroke: #64748b; stroke-width: 2; rx: 14; }
+      .risk { fill: #fff1f2; stroke: #be123c; stroke-width: 2; rx: 14; }
+      .line { fill: none; stroke: #1f4e79; stroke-width: 3; marker-end: url(#arrow); }
+      .line-green { fill: none; stroke: #2f7d32; stroke-width: 3; marker-end: url(#arrowGreen); }
+      .line-red { fill: none; stroke: #b42318; stroke-width: 3; marker-end: url(#arrowRed); }
+      .line-dash { fill: none; stroke: #64748b; stroke-width: 2.5; stroke-dasharray: 8 8; marker-end: url(#arrow); }
+      .pill-blue { fill: #2b6cb0; rx: 12; }
+      .pill-green { fill: #2f7d32; rx: 12; }
+      .pill-purple { fill: #6d28d9; rx: 12; }
+      .pill-orange { fill: #c2410c; rx: 12; }
+      .pill-red { fill: #b42318; rx: 12; }
+    </style>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1800" height="1180"/>
+
+  <text class="title" x="60" y="58">Credit Recovery Platform - Arquitetura M4</text>
+  <text class="subtitle" x="60" y="88">Visao em quatro macrocamadas: entrada, processamento/eventos, dados/consulta e observabilidade.</text>
+
+  <rect class="lane" x="40" y="120" width="1720" height="170"/>
+  <text class="lane-title" x="62" y="154">1. Canais, sistemas origem e entrada</text>
+
+  <rect class="external" x="70" y="180" width="250" height="80"/>
+  <text class="box-title" x="92" y="208">Sistemas origem</text>
+  <text class="box-text" x="92" y="232">ERP, CRM, Core Banking</text>
+  <text class="box-text" x="92" y="252">Perfil financeiro PJ</text>
+
+  <rect class="aws" x="385" y="180" width="210" height="80"/>
+  <text class="box-title" x="410" y="208">Amazon S3</text>
+  <text class="box-text" x="410" y="232">Landing de arquivos</text>
+  <text class="box-text" x="410" y="252">Entrada batch opcional</text>
+
+  <rect class="aws" x="660" y="180" width="230" height="80"/>
+  <text class="box-title" x="690" y="208">Amazon SQS</text>
+  <text class="box-text" x="690" y="232">credit-profile-received</text>
+  <text class="box-text" x="690" y="252">Eventos de perfil</text>
+
+  <rect class="risk" x="960" y="180" width="220" height="80"/>
+  <text class="box-title" x="992" y="208">SQS DLQ</text>
+  <text class="box-text" x="992" y="232">Mensagens invalidas</text>
+  <text class="box-text" x="992" y="252">Redrive apos falhas</text>
+
+  <rect class="external" x="1270" y="180" width="420" height="80"/>
+  <text class="box-title" x="1295" y="208">Clientes de consulta</text>
+  <text class="box-text" x="1295" y="232">Mobile, bankline, backoffice e canais digitais</text>
+  <text class="box-text" x="1295" y="252">GET /api/v1/customers/{cnpj}/recovery-strategy</text>
+
+  <path class="line" d="M 320 220 L 385 220"/>
+  <path class="line" d="M 595 220 L 660 220"/>
+  <path class="line-red" d="M 890 220 L 960 220"/>
+
+  <rect class="lane" x="40" y="330" width="1720" height="310"/>
+  <text class="lane-title" x="62" y="364">2. Processamento assincrono e regras de recuperacao</text>
+
+  <rect class="app" x="120" y="410" width="270" height="110"/>
+  <text class="box-title" x="146" y="440">ECS Fargate</text>
+  <text class="box-title" x="146" y="462">credit-strategy-processor</text>
+  <text class="box-text" x="146" y="488">Adapter in: SQS consumer</text>
+  <text class="box-text" x="146" y="508">Porta: CreditProfileEventUseCase</text>
+
+  <rect class="app" x="470" y="410" width="270" height="110"/>
+  <text class="box-title" x="498" y="440">Application service</text>
+  <text class="box-title" x="498" y="462">CreditProfileEventHandler</text>
+  <text class="box-text" x="498" y="488">Idempotencia por eventId</text>
+  <text class="box-text" x="498" y="508">Orquestra engine e persistencia</text>
+
+  <rect class="app" x="820" y="410" width="270" height="110"/>
+  <text class="box-title" x="848" y="440">RecoveryStrategyEngine</text>
+  <text class="box-text" x="848" y="466">Strategy Pattern</text>
+  <text class="box-text" x="848" y="488">RecoveryRule por regra</text>
+  <text class="box-text" x="848" y="508">Ordenacao por prioridade</text>
+
+  <rect class="external" x="1170" y="392" width="475" height="145"/>
+  <text class="box-title" x="1196" y="422">Regras implementadas</text>
+  <text class="box-text" x="1196" y="448">1-15 dias: HOME_DIGITAL / EMAIL</text>
+  <text class="box-text" x="1196" y="470">16-30 dias: COMMUNICATION / SMS ou WHATSAPP</text>
+  <text class="box-text" x="1196" y="492">+60 dias: NEGATIVACAO</text>
+  <text class="box-text" x="1196" y="514">+90 dias: DISTRIBUTE_TO_PARTNER_OFFICE</text>
+  <text class="box-text" x="1196" y="536">Cartao PJ + alto risco: TEMPORARY_CARD_BLOCK</text>
+
+  <rect class="aws" x="118" y="555" width="300" height="55"/>
+  <text class="box-title" x="144" y="589">AWS SDK v2 + Resilience4j</text>
+  <text class="box-text" x="144" y="607">Retry, circuit breaker e timeouts</text>
+
+  <rect class="aws" x="480" y="555" width="300" height="55"/>
+  <text class="box-title" x="506" y="589">EventBridge futuro</text>
+  <text class="box-text" x="506" y="607">StrategyGeneratedEvent para integracoes</text>
+
+  <rect class="external" x="840" y="555" width="420" height="55"/>
+  <text class="box-title" x="866" y="589">Servicos externos</text>
+  <text class="box-text" x="866" y="607">WhatsApp, Email, SMS, negativacao, bloqueio, parceiros</text>
+
+  <path class="line-green" d="M 775 260 C 775 325 255 325 255 410"/>
+  <path class="line-green" d="M 390 465 L 470 465"/>
+  <path class="line-green" d="M 740 465 L 820 465"/>
+  <path class="line-green" d="M 1090 465 L 1170 465"/>
+  <path class="line-dash" d="M 630 555 L 630 535 C 630 525 670 525 720 535 L 840 570"/>
+
+  <rect class="lane" x="40" y="680" width="1720" height="290"/>
+  <text class="lane-title" x="62" y="714">3. Persistencia, consulta REST e visao materializada</text>
+
+  <rect class="data" x="110" y="760" width="345" height="130"/>
+  <text class="box-title" x="138" y="790">Amazon DynamoDB</text>
+  <text class="box-title" x="138" y="812">CreditRecoveryStrategy</text>
+  <text class="box-text" x="138" y="838">PK=CNPJ#{cnpj}</text>
+  <text class="box-text" x="138" y="860">SK=STRATEGY#CURRENT</text>
+  <text class="box-text" x="138" y="882">Historico: SK=STRATEGY#{generatedAt}</text>
+
+  <rect class="data" x="520" y="760" width="310" height="130"/>
+  <text class="box-title" x="548" y="790">Idempotencia</text>
+  <text class="box-text" x="548" y="820">PK=EVENT#{eventId}</text>
+  <text class="box-text" x="548" y="842">Escrita transacional</text>
+  <text class="box-text" x="548" y="864">Evita reprocessamento</text>
+
+  <rect class="aws" x="930" y="750" width="260" height="90"/>
+  <text class="box-title" x="958" y="780">ALB ou API Gateway</text>
+  <text class="box-text" x="958" y="806">Entrada REST</text>
+  <text class="box-text" x="958" y="828">Health check Actuator</text>
+
+  <rect class="app" x="1270" y="750" width="330" height="120"/>
+  <text class="box-title" x="1300" y="780">ECS Fargate</text>
+  <text class="box-title" x="1300" y="802">credit-strategy-api</text>
+  <text class="box-text" x="1300" y="830">GET estrategia atual</text>
+  <text class="box-text" x="1300" y="852">GET historico</text>
+  <text class="box-text" x="1300" y="874">Sem scan no DynamoDB</text>
+
+  <rect class="external" x="1125" y="895" width="475" height="45"/>
+  <text class="box-title" x="1150" y="924">Resposta JSON: riskLevel, productType, actions, partnerOffice, generatedAt</text>
+
+  <path class="line-green" d="M 955 520 C 955 675 280 675 280 760"/>
+  <path class="line-green" d="M 605 520 C 605 660 675 660 675 760"/>
+  <path class="line" d="M 1480 260 L 1480 330 C 1480 520 1060 560 1060 750"/>
+  <path class="line" d="M 1190 795 L 1270 795"/>
+  <path class="line" d="M 1270 832 C 1060 832 1060 825 455 825"/>
+  <path class="line" d="M 1435 870 L 1435 895"/>
+
+  <rect class="lane" x="40" y="1010" width="1720" height="125"/>
+  <text class="lane-title" x="62" y="1044">4. Observabilidade, seguranca e ambiente local</text>
+
+  <rect class="obs" x="100" y="1065" width="270" height="45"/>
+  <text class="box-title" x="126" y="1094">CloudWatch Logs/Metrics</text>
+
+  <rect class="obs" x="430" y="1065" width="270" height="45"/>
+  <text class="box-title" x="456" y="1094">OpenTelemetry / X-Ray</text>
+
+  <rect class="obs" x="760" y="1065" width="310" height="45"/>
+  <text class="box-title" x="786" y="1094">Elasticsearch + Logstash local</text>
+
+  <rect class="aws" x="1130" y="1065" width="220" height="45"/>
+  <text class="box-title" x="1160" y="1094">IAM least privilege</text>
+
+  <rect class="aws" x="1410" y="1065" width="220" height="45"/>
+  <text class="box-title" x="1450" y="1094">KMS opcional</text>
+
+  <path class="line-dash" d="M 255 520 C 255 700 235 900 235 1065"/>
+  <path class="line-dash" d="M 1435 870 C 1435 1000 920 1000 915 1065"/>
+  <path class="line-dash" d="M 1435 870 C 1435 1000 565 1000 565 1065"/>
+
+  <rect class="pill-blue" x="60" y="1128" width="165" height="28"/>
+  <text class="tag" x="82" y="1147">Entrada REST/Eventos</text>
+  <rect class="pill-green" x="245" y="1128" width="170" height="28"/>
+  <text class="tag" x="267" y="1147">Aplicacoes Java</text>
+  <rect class="pill-orange" x="435" y="1128" width="160" height="28"/>
+  <text class="tag" x="461" y="1147">Dados persistidos</text>
+  <rect class="pill-purple" x="615" y="1128" width="160" height="28"/>
+  <text class="tag" x="646" y="1147">Observabilidade</text>
+  <rect class="pill-red" x="795" y="1128" width="150" height="28"/>
+  <text class="tag" x="829" y="1147">Falhas / DLQ</text>
+
+  <text class="small" x="1170" y="1148">CNPJ nunca e logado puro: logs usam hash do documento e correlationId.</text>
+</svg>

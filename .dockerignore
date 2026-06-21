@@ -1,0 +1,7 @@
+.git
+.idea
+.vscode
+**/target
+infrastructure/localstack/.localstack
+*.log
+README.md
