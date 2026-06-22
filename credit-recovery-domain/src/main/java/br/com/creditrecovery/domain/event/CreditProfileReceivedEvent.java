@@ -13,7 +13,7 @@ public record CreditProfileReceivedEvent(
 ) implements CreditRecoveryDomainEvent {
 
     public CreditProfileReceivedEvent {
-        if (eventId == null || eventId.isBlank()) {
+        if (Objects.isNull(eventId) || eventId.isBlank()) {
             throw new IllegalArgumentException("Event id is required");
         }
         if (correlationId == null || correlationId.isBlank()) {
